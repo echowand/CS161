@@ -1,5 +1,5 @@
 ;;1. Write a single Boolean LISP function, called TREE-CONTAINS, which takes two arguments N and
-;;TREE, and checks whether number N appears in the ordered tree TREE.
+;;TREE, and checks whether number N appears in the ordered tree TREE, return T if TREE contains N, otherwise NIL. 
 
 (defun TREE-CONTAINS (N TREE)
   ;special case:
@@ -46,7 +46,7 @@
     (t (SUB-LIST (rest L) (- START 1) LEN))))
 
 
-;;5. Write a single LISP function, called SPLIT-LIST
+;;5. Write a single LISP function, called SPLIT-LIST that takes a list L, and returns a list of two lists L1 and L2.
 
 (defun SPLIT-LIST (L)
   (if (<= (length L) 1) L)
@@ -64,7 +64,7 @@
     (t (+ (BTREE-HEIGHT (second TREE)) 1))))
 
 
-;;7. Write a single LISP function, called LIST2BTREE
+;;7. Write a single LISP function, called LIST2BTREE that takes a non-empty list of atoms LEAVES, and returns a binary tree.
 
 (defun LIST2BTREE (LEAVES) 
   (cond 
