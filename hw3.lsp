@@ -227,6 +227,7 @@
    );end let
   );
 
+
 ;get-square that takes in a State S, a row number r, and a column number c. 
 ;It should return the integer content of state S at square (r,c). 
 ;If the square is outside the scope of the problem, return the value of a wall.
@@ -272,10 +273,12 @@
    	    (t (cons (set-square (first s) 0 c v) (rest s)))))
     (t (cons (first s) (set-square (rest s) (- r 1) c v)))))
 
+
 ;try-move takes in a state S and a move direction D. 
 ;This function should return the state that is the result of moving the keeper in state S in direction D. 
 ;NIL should be returned if the move is invalid (e.g., there is a wall in that direction). 
 ;How you represent a move direction is up to you. Remember to update the content of every square to the right value. 
+;d=0, move up. d=1, move right. d=2, move down. d=3, move left.
 (defun try-move (s d)
   (let* 
   	((pos (getKeeperPosition s 0))
@@ -289,7 +292,10 @@
 	((= d 3) (move-left s r c))
 	(t nil))))
 
-;move-up
+;move-up takes state s, row r, column c as inputs. Returns the new state if moving up is valid, otherwise nil. 
+;Checks out of bound cases when moving around. 
+;nv: next value. nr: next row. nc: next column. nnv: next next value. nnr: next next row. nnc: next next column. 
+;Explanations in code. 
 (defun move-up (s r c)
   (cond 
   	((= r 0) nil)
@@ -299,21 +305,29 @@
   	  (nr (- r 1))
   	  (nv (get-square s nr c)))
   	  (cond 
+  	  	;up is wall.
   	  	((= nv 1) nil)
+  	  	;up is blank/goal, curr square is keeper/keeper+goal. 2*2=4 possibilities. move keeper up. 
   	  	((and (isKeeper v) (= nv 0))     (set-square (set-square s r c 0) nr c 3))
   	  	((and (isKeeperStar v) (= nv 0)) (set-square (set-square s r c 4) nr c 3))
   	  	((and (isKeeper v) (= nv 4))     (set-square (set-square s r c 0) nr c 6))
   	  	((and (isKeeperStar v) (= nv 4)) (set-square (set-square s r c 4) nr c 6))
+  	  	;up is box/box+goal, need helper function to check two squares above keeper square. 
   	  	((or (= nv 2) (= nv 5))  
   	  	  (let*   	
   	  	    ((nnr (- r 2))
   			(nnv (get-square s nnr c)))
   	  		(cond 
+  	  		  ;out of bound --- invalid
   	  		  ((< (- r 2) 0) nil)
+  	  		  ;two squares up is wall/box/box+goal --- invalid
   	  		  ((or (= nnv 1) (= nnv 2) (= nnv 5)) nil)
-  	  		  (t (move-up-helper s r c)))))
+  	  		  ;helper function evaluates moving two squares up --- valid
+   	  		  (t (move-up-helper s r c)))))
   	  	(t nil))))))
 
+;move-up-helper takes state s, row r, column c as inputs. Returns the new state. All inputs should be validated in caller function.
+;s1: move 1 step. s2: move 2 steps. s3: followup of s2. Return s3 as the final state. 
 (defun move-up-helper (s r c)
   (let*
 	((v (get-square s r c))
@@ -321,11 +335,15 @@
   	(nv (get-square s nr c))
   	(nnr (- r 2))
   	(nnv (get-square s nnr c))
+  	;s1: move 1 step up, update (r, c)
 	(s1 (if (isKeeper v) (set-square s r c 0)    (set-square s r c 4)))
+	;s2: move 2 steps up, update (r-1, c)
 	(s2 (if (= nv 2) 	 (set-square s1 nr c 3)  (set-square s1 nr c 6)))
+	;s3: update (r-2, c)
 	(s3 (if (= nnv 0) 	 (set-square s2 nnr c 2) (set-square s2 nnr c 5))))
     s3))
 	
+;move-down similar algorithm to move-up.
 (defun move-down (s r c)
   (cond 
   	((= r (- (length s) 1)) nil)
@@ -350,6 +368,7 @@
   	  		  (t (move-down-helper s r c)))))
   	  	(t nil))))))
 
+;move-down-helper similar algorithm to move-up-helper
 (defun move-down-helper (s r c)
   (let*
 	((v (get-square s r c))
@@ -362,6 +381,7 @@
 	(s3 (if (= nnv 0) 	 (set-square s2 nnr c 2) (set-square s2 nnr c 5))))
     s3))
 
+;move-left similar algorithm to move-up.
 (defun move-left (s r c)
   (cond 
   	((= c 0) nil)
@@ -386,6 +406,7 @@
   	  		  (t (move-left-helper s r c)))))
   	  	(t nil))))))
 
+;move-left-helper similar algorithm to move-up-helper
 (defun move-left-helper (s r c)
   (let*
 	((v (get-square s r c))
@@ -398,6 +419,7 @@
 	(s3 (if (= nnv 0) 	 (set-square s2 r nnc 2) (set-square s2 r nnc 5))))
     s3))
 
+;move-right similar algorithm to move-up.
 (defun move-right (s r c)
   (cond 
   	((= c (- (length (first s)) 1)) nil)
@@ -422,6 +444,7 @@
   	  		  (t (move-right-helper s r c)))))
   	  	(t nil))))))
 
+;move-right-helper similar algorithm to move-up-helper
 (defun move-right-helper (s r c)
   (let*
 	((v (get-square s r c))
