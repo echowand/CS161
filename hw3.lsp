@@ -459,15 +459,20 @@
 
 ; EXERCISE: Modify this function to compute the trivial
 ; admissible heuristic.
-;
+; h0 takes a state s as input, returns the constant 0. 
 (defun h0 (s)
  '0)
 
 ; EXERCISE: Modify this function to compute the
 ; number of misplaced boxes in s.
-;
+; h1 takes a state s as input, returns the number of boxes which are not on goal positions in the given state.
+; That is, h1 counts '2' in table s by recursively calling (first s) and counting '2' in (first s)
+; h1 is admissible heuristic, Reasoning as following: there are more goals (G) than boxes (B), to place those boxes that are not on goal positions (BX),  
+; BX will always be lower than or equal to the steps to reach the goal state, which is the cost from curr state to goal state. 
 (defun h1 (s)
-  )
+  (cond 
+  	((null s) 0)
+  	(t (+ (count 2 (first s)) (h1 (rest s))))))
 
 ; EXERCISE: Change the name of this function to h<UID> where
 ; <UID> is your actual student ID number. Then, modify this
@@ -478,8 +483,149 @@
 ; The Lisp 'time' function can be used to measure the
 ; running time of a function call.
 ;
-(defun hUID (s)
-  )
+(defun h204777289 (s)
+	(if (null s) 0)
+	(let* 
+  		((pos (getKeeperPosition s 0))
+  		(c (car pos))
+ 		(r (cadr pos))
+ 		(boxList (getBoxAsList s))
+ 		(boxLen (length boxList)))
+ 		(cond 
+ 			((null pos) 0)
+ 			((null c) 0)
+ 			((null r) 0)
+ 			((= boxLen 0) 0)
+ 			(t (+ (minDistKeeperBox pos boxList)
+ 				  (sumDistGoalBox (getGoalAsList s) boxList))))))
+
+;Takes a state s, a list of goal squares (including goal with keeper, goal with box) goalList, a list of boxes boxList as input. 
+;Returns the sum of manhattan distance from each box to nearest goal. (multiple boxes aiming at the same goal is not adjusted)
+;Usage: (sumDistGoalBox (getGoalAsList p6) (getBoxAsList p6))
+(defun sumDistGoalBox (goalList boxList)
+	(cond 
+		((null boxList) 0)
+		((= (length boxList) 1) (minDistKeeperBox (first boxList) goalList))
+		(t (+ (minDistKeeperBox (first boxList) goalList) 
+			(sumDistGoalBox goalList (rest boxList))))))
+			
+;Takes a state s, a keeper position keeperPos, a list of boxes boxList as input. 
+;Returns the manhattan distance from keeper to nearest box.
+;Usage: (minDistKeeperBox (getKeeperPosition p11 0) (getBoxAsList p11))
+(defun minDistKeeperBox (keeperPos boxList)
+	(cond 
+		((null boxList) 0)
+		((= (length boxList) 1) (manhattanDistance (first boxList) keeperPos))
+		(t (let* 
+			((curr (manhattanDistance keeperPos (first boxList)))
+			(minVal (minDistKeeperBox keeperPos (rest boxList))))
+			(if (< curr minVal) curr minVal)))))
+				
+;Output is a list of boxes ('2' only), boxes on the goal square are not counted.
+;Example: ((2 3) (3 3))
+(defun getBoxAsList (s)
+	(let* 
+		((pos (getBoxPosition s 0))
+  		(c (car pos))
+ 		(r (cadr pos)))
+		(cond 
+			((null pos) nil)
+			(t (cons pos (getBoxAsList (set-square s r c 0)))))))
+
+;Output is a list of goals ('4' or '6')
+(defun getGoalAsList (s)
+	(let* 
+		((pos (getGoalPosition s 0))
+  		(c (car pos))
+ 		(r (cadr pos)))
+		(cond 
+			((null pos) nil)
+			(t (cons pos (getGoalAsList (set-square s r c 0)))))))
+
+;Calculate manhattan distance. pos=(c, r).
+;output = |pos1.c - pos2.c| + |pos1.r - pos2.r|
+(defun manhattanDistance (pos1 pos2)
+	(let* 
+		((x1 (car pos1))
+		(y1 (cadr pos1))
+		(x2 (car pos2))
+		(y2 (cadr pos2))
+		(d1 (if (> x1 x2) (- x1 x2) (- x2 x1)))
+		(d2 (if (> y1 y2) (- y1 y2) (- y2 y1))))
+		(+ d1 d2)))
+
+; Assuming index starts from 0. 
+; Helper function of getBoxPosition
+; Usage: (getBoxColumn '(1 0 4 0 4 1 3 0 1) 0) => 6
+(defun getBoxColumn (r col)
+  (cond ((null r) nil)
+	(t (if (isBox (car r)) 
+	     col
+	     (getBoxColumn (cdr r) (+ col 1))
+	   );end if
+	);end t
+  );end cond
+)
+
+; getBoxPosition (s firstRow)
+; Returns a list indicating the position of the box (c r).
+; 
+; Assumes that the box is in row >= firstRow.
+; The top row is the zeroth row.
+; The first (right) column is the zeroth column.
+;
+(defun getBoxPosition (s row)
+  (cond ((null s) nil)
+	(t (let ((x (getBoxColumn (car s) 0)))
+     (if x
+	 ;keeper is in this row
+	 (list x row)
+	 ;otherwise move on
+	 (getBoxPosition (cdr s) (+ row 1))
+	 );end if
+    );end let
+    );end t
+  );end cond
+);end defun
+
+; Assuming index starts from 0. 
+; Helper function of getGoalPosition
+; Usage: (getGoalColumn '(1 0 4 0 4 1 3 0 1) 0) => 6
+(defun getGoalColumn (r col)
+  (cond ((null r) nil)
+	(t (if (or (isStar (car r)) (isBoxStar (car r)) (isKeeperStar (car r)))
+	     col
+	     (getGoalColumn (cdr r) (+ col 1))
+	   );end if
+	);end t
+  );end cond
+)
+
+; getGoalPosition (s firstRow)
+; Returns a list indicating the position of the goal (c r).
+; 
+; Assumes that the goal is in row >= firstRow.
+; The top row is the zeroth row.
+; The first (right) column is the zeroth column.
+;
+(defun getGoalPosition (s row)
+  (cond ((null s) nil)
+	(t (let ((x (getGoalColumn (car s) 0)))
+     (if x
+	 ;keeper is in this row
+	 (list x row)
+	 ;otherwise move on
+	 (getGoalPosition (cdr s) (+ row 1))
+	 );end if
+    );end let
+    );end t
+  );end cond
+);end defun
+
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
