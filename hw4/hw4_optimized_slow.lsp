@@ -43,28 +43,40 @@
   (if (is-complete n assign) 
     assign
     (let* 
-      ((selectedVar (select-var1 n delta assign))
-      (newAssign (append assign (list selectedVar)))
-      (newAssignNeg (append assign (list (- 0 selectedVar)))))
+      ((selectedVars (select-var1 n delta assign)))
+      (cond 
+        ((listp selectedVars) 
+          ;single clause was found, do not need backtracking here
+          (if (eval-delta (append assign selectedVars) delta)
+            (sat?helper n delta (append assign selectedVars))))
+        ((numberp selectedVars) 
+          (let* 
+            ((selectedVar (select-var1 n delta assign))
+            (newAssign (append assign (list selectedVar)))
+            (newAssignNeg (append assign (list (- 0 selectedVar)))))
       
-      ;(format t "-----------------------" )
-      ;(format t "selectedVar: ~A~%" selectedVar)
-      ;(format t "newAssign: ~A~%" newAssign)
-      ;(format t "newAssignNeg: ~A~%" newAssignNeg)
-      (if (or (< selectedVar 1) (> selectedVar n)) nil) 
-      ;(if (forward-checking delta (ops-list newAssign)) nil)
-      ;(if (forward-checking delta (ops-list newAssignNeg)) nil)
+            ;(format t "-----------------------" )
+            ;(format t "selectedVar: ~A~%" selectedVar)
+            ;(format t "newAssign: ~A~%" newAssign)
+            ;(format t "newAssignNeg: ~A~%" newAssignNeg)
 
-      (if (eval-delta newAssign delta)
-        (let* ((res (sat?helper n delta newAssign)))
-          (if (not (null res))
-            res
-            (if (eval-delta newAssignNeg delta)
-              (sat?helper n delta newAssignNeg)
-              nil)))
-        (if (eval-delta newAssignNeg delta)
-          (sat?helper n delta newAssignNeg)
-          nil))
+            (if (or (< selectedVar 1) (> selectedVar n)) nil) 
+            ;(if (forward-checking delta (ops-list newAssign)) nil)
+            ;(if (forward-checking delta (ops-list newAssignNeg)) nil)
+
+            (if (eval-delta newAssign delta)
+              (let* ((res (sat?helper n delta newAssign)))
+                (if (not (null res))
+                  res
+                  ;backtracking
+                  (if (eval-delta newAssignNeg delta)
+                    (sat?helper n delta newAssignNeg)
+                    nil)))
+              (if (eval-delta newAssignNeg delta)
+                (sat?helper n delta newAssignNeg)
+                nil))
+            ))
+        (t nil))
       )))
 
 
@@ -142,7 +154,7 @@
     (t 
       (let* ((singleClause (find-single-clause delta assign)))
         (cond
-          ((not (null singleClause)) (first singleClause))
+          ((not (null singleClause)) (list (first singleClause)))
           (t (select-var-in-order n assign 1))
           )))))
 
@@ -221,15 +233,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;below are testing and debug;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; (setq x (parse-cnf "./cnfs/sat/cnf_10.cnf"))
-; (setq y (parse-cnf "./cnfs/sat/cnf_20.cnf"))
-; (setq z (parse-cnf "./cnfs/sat/cnf_30.cnf"))
-; (setq k (parse-cnf "./cnfs/sat/cnf_50.cnf"))
-; (setq a (parse-cnf "./cnfs/unsat/cnf_12.cnf"))
-; (setq b (parse-cnf "./cnfs/unsat/cnf_20.cnf"))
-; (setq c (parse-cnf "./cnfs/unsat/cnf_30.cnf"))
-; (setq dd (parse-cnf "./cnfs/unsat/cnf_42.cnf"))
-; (sat? (first x) (second x))
+(setq x (parse-cnf "./cnfs/sat/cnf_10.cnf"))
+(setq y (parse-cnf "./cnfs/sat/cnf_20.cnf"))
+(setq z (parse-cnf "./cnfs/sat/cnf_30.cnf"))
+(setq k (parse-cnf "./cnfs/sat/cnf_50.cnf"))
+(setq a (parse-cnf "./cnfs/unsat/cnf_12.cnf"))
+(setq b (parse-cnf "./cnfs/unsat/cnf_20.cnf"))
+(setq c (parse-cnf "./cnfs/unsat/cnf_30.cnf"))
+(setq dd (parse-cnf "./cnfs/unsat/cnf_42.cnf"))
+(sat? (first x) (second x))
 
 ;(debug-result x (sat? (first x) (second x)))
 ;(debug-result k (sat? (first k) (second k)))
